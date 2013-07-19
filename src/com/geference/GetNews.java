@@ -7,17 +7,18 @@ import java.net.URL;
 
 import android.os.AsyncTask;
 
-public class GetNews extends AsyncTask{
+public class GetNews extends AsyncTask<String, String, String>{
 	
 	private boolean doneGet=false;
 	private String fileContent;
 	
+	
 	@Override
-	protected String doInBackground(Object... params) {
+	protected String doInBackground(String... params) {
 		// Get file 
 		StringBuilder file = new StringBuilder();
 		try{
-			URL url=new URL("http://api.geference.com/phn/breast_cancer");
+			URL url=new URL( params[0] );
 			HttpURLConnection conn = (HttpURLConnection)url.openConnection();
 			if( conn != null){
 				conn.setConnectTimeout(10000);
