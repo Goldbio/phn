@@ -35,10 +35,9 @@ public class MainActivity extends Activity {
 		while(true){
 			if( news.checkDone() == true){
 				fileContent = news.getContent();
-				
+
 				// Display 
 				displayNews(fileContent);
-				
 				
 				break;
 			}
@@ -56,13 +55,22 @@ public class MainActivity extends Activity {
 			JSONArray newsJson = new JSONArray(json);
 			
 			
-			for(int i=0; i< newsJson.length(); i++){
+			for(int i=0; i< newsJson.length() ; i++){
 					
 				JSONObject eachNews = newsJson.getJSONObject(i);
 								
 				String title =eachNews.getString("title") ;
 				String date =eachNews.getString("date") ;
 				String img_url_str = eachNews.getString("image_url");
+				
+				View view = (View)getLayoutInflater().inflate(  R.layout.news_item, null );
+				
+				TextView title_view = (TextView)view.findViewById(R.id.title);
+				title_view.setText( title);
+				
+				TextView date_view = (TextView)view.findViewById(R.id.date);
+				date_view.setText(date);
+				
 				if( !img_url_str.equals("NA") ){
 					// Download picture 
 					// class GetImage 
@@ -75,13 +83,7 @@ public class MainActivity extends Activity {
 						if( img.isDone() ){
 							//img_view.setImageBitmap( img.getImgBitmap() ); 
 							
-							View view = (View)getLayoutInflater().inflate(R.layout.news_item, null);
 							
-							TextView title_view = (TextView)view.findViewById(R.id.title);
-							title_view.setText( title);
-							
-							TextView date_view = (TextView)view.findViewById(R.id.date);
-							date_view.setText(date);
 							
 							ImageView img_view = (ImageView)view.findViewById(R.id.img);
 							img_view.setImageBitmap( img.getImgBitmap() );
@@ -91,6 +93,10 @@ public class MainActivity extends Activity {
 							
 						}
 					}
+					
+				}
+				else{
+					//item_wrapper.addView(view);
 					
 				}
 			
