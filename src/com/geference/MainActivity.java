@@ -6,17 +6,22 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.Set;
 
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -58,16 +63,16 @@ public class MainActivity extends Activity {
 	
 
 
-	protected View setNewsView( String title, String date, String img_url ) throws InterruptedException{
+	protected View setNewsView( String title, String date, String img_url, String content ) throws InterruptedException{
 		View view = (View)getLayoutInflater().inflate(  R.layout.news_item, null );
 		
 		TextView title_view = (TextView)view.findViewById(R.id.title);
 		TextView date_view = (TextView)view.findViewById(R.id.date);
 		ImageView img_view = (ImageView)view.findViewById(R.id.img);
-		
+		TextView content_view = (TextView)view.findViewById(R.id.content);
 		title_view.setText( title);
 		date_view.setText(date);
-		
+		content_view.setText(content);
 		new GetImage( img_view).execute( img_url );
 		
 		
@@ -86,9 +91,33 @@ public class MainActivity extends Activity {
 				String title =json.getString("title") ;
 				String date =json.getString("date") ;
 				String img_url_str = json.getString("image_url");
+			//	String content = json.getString("article");
 				
 						
-				View newsView=setNewsView( title, date, img_url_str );
+				View newsView=setNewsView( title, date, img_url_str, json.toString() );
+				
+				newsView.setOnClickListener(new View.OnClickListener(){
+					
+
+					public void onClick(View v) {
+					
+						
+							
+						//Toast.makeText(MainActivity.this,"touch "+v.getId() ,0).show();
+						
+						TextView tv= (TextView)v.findViewById(R.id.content);
+						
+						// Start News display Activity with clicked view ID for display 
+						Intent intent = new Intent(MainActivity.this, NewsViewActivity.class);
+						intent.putExtra( "data", tv.getText() );
+						startActivity(intent);
+							
+						
+					}
+					
+					
+				});
+				
 				item_wrapper.addView(newsView);
 				
 			
