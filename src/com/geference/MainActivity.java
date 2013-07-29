@@ -18,9 +18,12 @@ import android.os.Message;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
@@ -41,11 +44,10 @@ public class MainActivity extends Activity {
 		
 		// Get content 
 		GetNews news = new GetNews();
-		news.execute("http://api.geference.com/phn/prostate_cancer");
+		news.execute("http://api.geference.com/phn");
 		while(true){
 			if( news.checkDone() == true){
 				fileContent = news.getContent();
-
 				displayNews(fileContent);
 					
 				
@@ -61,11 +63,47 @@ public class MainActivity extends Activity {
 			
 	}
 	
+	
+	public boolean onCreateOptionsMenu(Menu menu) {
+	    // Inflate the menu items for use in the action bar
+	    MenuInflater inflater = getMenuInflater();
+	    inflater.inflate(R.menu.actionbar_menu, menu);
+	    return super.onCreateOptionsMenu(menu);
+	}
+	
+	
+	public boolean onOptionsItemSelected(MenuItem item) {
+	    // Handle presses on the action bar items
+	    switch (item.getItemId()) {
+	        case R.id.action_search:
+	            Toast.makeText(this, "Clicked",0).show();
+	            return true;
+	       
+	        default:
+	            return super.onOptionsItemSelected(item);
+	    }
+	}
+	
+	
+	
+	public void onConfigurationChanged(Configuration newConfig){
+		super.onConfigurationChanged(newConfig);
+		
+		if( newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE){
+			Toast.makeText( getApplicationContext(), "changed",1110).show();
+		}
+		else if( newConfig.orientation == Configuration.ORIENTATION_PORTRAIT ){
+			
+			Toast.makeText( getApplicationContext(), "changed",1000).show();
+		}
+	}
+	
 
 
-	protected View setNewsView( String title, String date, String img_url, String content ) throws InterruptedException{
+	protected View setNewsView( String title, String date, String img_url, String content, String disease_type ) throws InterruptedException{
 		View view = (View)getLayoutInflater().inflate(  R.layout.news_item, null );
 		
+		TextView disease_type_view = (TextView)view.findViewById(R.id.disease);
 		TextView title_view = (TextView)view.findViewById(R.id.title);
 		TextView date_view = (TextView)view.findViewById(R.id.date);
 		ImageView img_view = (ImageView)view.findViewById(R.id.img);
@@ -73,6 +111,7 @@ public class MainActivity extends Activity {
 		title_view.setText( title);
 		date_view.setText(date);
 		content_view.setText(content);
+		disease_type_view.setText(disease_type);
 		new GetImage( img_view).execute( img_url );
 		
 		
@@ -91,10 +130,11 @@ public class MainActivity extends Activity {
 				String title =json.getString("title") ;
 				String date =json.getString("date") ;
 				String img_url_str = json.getString("image_url");
+				String disease_type = json.getString("disease_type");
 			//	String content = json.getString("article");
 				
 						
-				View newsView=setNewsView( title, date, img_url_str, json.toString() );
+				View newsView=setNewsView( title, date, img_url_str, json.toString(), disease_type );
 				
 				newsView.setOnClickListener(new View.OnClickListener(){
 					
