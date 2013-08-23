@@ -6,6 +6,7 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.app.NavUtils;
 import android.text.Html;
 import android.view.Gravity;
 import android.view.Menu;
@@ -20,6 +21,8 @@ public class NewsViewActivity extends Activity{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.news_main);
 	
+		
+		getActionBar().setDisplayHomeAsUpEnabled(true);
 		
 		JSONObject json;
 		try {
@@ -64,10 +67,14 @@ public class NewsViewActivity extends Activity{
 	public boolean onOptionsItemSelected(MenuItem item) {
 	    // Handle presses on the action bar items
 	    switch (item.getItemId()) {
+	    
 	        case R.id.social_menu:
 	            Toast.makeText(this, "Clicked",0).show();
 	            return true;
 	       
+	        case android.R.id.home:
+	        	NavUtils.navigateUpFromSameTask(this);
+	        	return true;
 	        default:
 	            return super.onOptionsItemSelected(item);
 	    }
