@@ -1,9 +1,12 @@
 package com.geference;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Set;
 
@@ -13,6 +16,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.app.Activity;
@@ -21,9 +25,18 @@ import android.app.FragmentManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.gesture.GestureOverlayView;
+import android.gesture.GestureOverlayView.OnGestureListener;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.view.GestureDetectorCompat;
+import android.support.v4.view.MotionEventCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.text.TextUtils;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -46,7 +59,33 @@ public class HomeActivity extends Activity {
 	private ListView lv;
 	private DrawerLayout dl;
 	ActionBarDrawerToggle drawToggle;
+	ArrayList<String> al ;
+	GetNews[] raw_news_array= new GetNews[3];
 	
+	private GestureDetectorCompat gd; 
+	
+	
+	private final class SimpleGestureListener 
+	  extends GestureDetector.SimpleOnGestureListener {
+		
+		// Detect swipe up at the bottom of the page, and add 10 more news 
+		
+		public boolean onDown(MotionEvent e){
+			Toast.makeText(HomeActivity.this,"down",0).show();
+			return false;
+			
+		}
+	}
+	
+	public boolean onTouchEvent(MotionEvent event) {
+	      return gd.onTouchEvent(event);
+	}
+	 
+	public boolean dispatchTouchEvent(MotionEvent ev){
+		    super.dispatchTouchEvent(ev);    
+		    return gd.onTouchEvent(ev); 
+	}
+		
 	protected void onCreate(Bundle savedInstanceState) {
 		
 		
@@ -54,19 +93,25 @@ public class HomeActivity extends Activity {
 		setContentView(R.layout.activity_main);
 				
 		
-		// Navigation drawer 
-		 ArrayList<String> al = new ArrayList<String>();
-	        al.add("All diseases");
-	        al.add("Risky diseases");
-	        al.add("Most viewed news");
-	        
-	     ArrayAdapter<String> Adapter;
-	     Adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, al);
+		
+		// Navigation drawer menu 
+	 	al = new ArrayList<String>();
+        al.add("My diseases");
+        al.add("All diseases");
+       
+        
+	     ArrayAdapter<String> Adapter= new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, al);
 	      
 	     lv= (ListView)findViewById(R.id.left_drawer);
 	     lv.setAdapter(Adapter);
 	     lv.setOnItemClickListener(onClickItem); 
 	       
+
+		 gd=new GestureDetectorCompat(this, new SimpleGestureListener() );
+
+		 ScrollView scroll = (ScrollView) findViewById(R.id.scrollView);
+		 //scroll.setOnScrollChanged();
+		 
 	     dl = (DrawerLayout)findViewById(R.id.drawer_layout);
 	     
 	     drawToggle = new ActionBarDrawerToggle( this , dl, R.drawable.ic_drawer ,  1 , 0) {
@@ -95,14 +140,51 @@ public class HomeActivity extends Activity {
     	
     	
 		
-		// Get content 
-		GetNews news = new GetNews();
-		news.execute("http://api.geference.com/phn");
+		//////// Get content  according to user_disease in SQLdb 
+      
+        // Read user_disease in sqlDB 
+		
+ 		SQLdb sqlDB= new SQLdb(this);
+ 		SQLiteDatabase db = sqlDB.getReadableDatabase();
+ 		Cursor cursor;
+     		
+
+		// Check if a user select a given disease
+     	ArrayList<String> list =new ArrayList<String>();
+     	
+     	
+		cursor = db.rawQuery("select disease from user_disease", null );
+		while( cursor.moveToNext() ){
+			String disease = cursor.getString(0).toLowerCase().replace(" ","_");
+			list.add( disease );
+
+		}
+		String user_disease_param=TextUtils.join(",", list);
+        
+		
+		String[] all_disease_array= getResources().getStringArray(R.array.disease_list);
+		ArrayList<String> list_all = new ArrayList<String>();
+		
+		for(int i=0; i< all_disease_array.length ; i++){
+			String processed_disease= all_disease_array[i].toLowerCase().replace(" ","_");
+			list_all.add( processed_disease);
+		}
+		String all_disease_param= TextUtils.join( ",",list_all ) ;
+		
+		
+		// Prepare Navigation drawer menu 
+		raw_news_array[0] = new GetNews();	
+		raw_news_array[0].execute("http://api.geference.com/phn/"+user_disease_param);
+		
+		raw_news_array[1] = new GetNews();	
+		raw_news_array[1].execute("http://api.geference.com/phn/"+all_disease_param);
+		
+		
+		
 		while(true){
-			if( news.checkDone() == true){
-				fileContent = news.getContent();
+			if( raw_news_array[0].checkDone() == true ){
+				fileContent = raw_news_array[0].getContent();
 				displayNews(fileContent);
-					
 				
 				break;
 			}
@@ -117,20 +199,54 @@ public class HomeActivity extends Activity {
 	}
 	
 	
+	
 	AdapterView.OnItemClickListener onClickItem = new AdapterView.OnItemClickListener(){
 
 		@Override
 		public void onItemClick(AdapterView<?> arg0, View view, int pos,
 				long arg3) {
 			
+			// Clear news list 
+			LinearLayout item_wrapper = (LinearLayout)findViewById(R.id.item_wrapper);			
+			item_wrapper.removeAllViews();
+			
+			
+			if( pos == 1 ){
+				while(true){
+					if( raw_news_array[1].checkDone() == true ){
+						fileContent = raw_news_array[1].getContent();
+						displayNews(fileContent);
+						
+						break;
+					}
+					try{
+						Thread.sleep(20);
+					}catch(Exception e){}
+				}
+				
+				
+				
+			}
+			else{
+				
+				fileContent = raw_news_array[0].getContent();
+				displayNews(fileContent);
+				
+			}
+			
+			
+			/*
+			Fragment fragment = new ExamFragment();
+			FragmentManager fm = getFragmentManager();
+			fm.beginTransaction().replace(R.id.content_frame, fragment).commit();
+			*/
+			
 			lv.setItemChecked(pos, true);
 			getActionBar().setTitle(""+ lv.getItemAtPosition(pos) );
 			dl.closeDrawer(lv);
 			
 			
-			Fragment fragment = new ExamFragment();
-			FragmentManager fm = getFragmentManager();
-			fm.beginTransaction().replace(R.id.content_frame, fragment).commit();
+			
 			
 		}
 		
@@ -189,12 +305,44 @@ public class HomeActivity extends Activity {
 		date_view.setText(date);
 		content_view.setText(content);
 		disease_type_view.setText(disease_type);
-		new GetImage( img_view).execute( img_url );
+		
+		// Check if a given image is in local device
+		// if not, download image
+		
+		String path = Environment.getDataDirectory().getAbsolutePath();
+		int idx= img_url.lastIndexOf('/');
+		String img_file_name = img_url.substring(idx+1);
+		path+= "/data/com.geference/files/" +  img_file_name;
+		
+		if( new File(path).exists() == false){
+			new GetImage( img_view, getBaseContext() ).execute( img_url, img_file_name  );
+			
+			
+			
+		}
+		else{
+			Bitmap bitmap = BitmapFactory.decodeFile(path);
+			img_view.setImageBitmap( bitmap );
+			
+		}
+		
+		
+		
+		
 		
 		
 		return view;
 	}
+	
+	
+	
+	
+	
+	  // Filter in only user_diseases 
 	protected void displayNews(String fileContent)   {
+		
+		
+		// Display news 
 		LinearLayout item_wrapper = (LinearLayout)findViewById(R.id.item_wrapper);			
 		
 		
@@ -206,9 +354,9 @@ public class HomeActivity extends Activity {
 			
 				String title =json.getString("title") ;
 				String date =json.getString("date") ;
-				String img_url_str = json.getString("image_url");
+				String img_url_str = json.getString("lead_image_url");
 				String disease_type = json.getString("disease_type");
-			//	String content = json.getString("article");
+				
 				
 						
 				View newsView=setNewsView( title, date, img_url_str, json.toString(), disease_type );
@@ -217,8 +365,6 @@ public class HomeActivity extends Activity {
 					
 
 					public void onClick(View v) {
-					
-						
 							
 						//Toast.makeText(MainActivity.this,"touch "+v.getId() ,0).show();
 						
@@ -228,8 +374,7 @@ public class HomeActivity extends Activity {
 						Intent intent = new Intent(HomeActivity.this, NewsViewActivity.class);
 						intent.putExtra( "data", tv.getText() );
 						startActivity(intent);
-							
-						
+					
 					}
 					
 					

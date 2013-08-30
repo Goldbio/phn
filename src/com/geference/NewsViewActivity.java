@@ -46,6 +46,7 @@ public class NewsViewActivity extends Activity{
 			String css="<style>"+
 					  "p {text-align:justify; padding : 0 13px ; line-height:1.4em }"
 					 + "p:first-letter { margin-left:10px}"
+					 + "img {  width:90%; display:block }" 
 					 +"</style>";
 			news_view.loadData( css+news_content, "text/html", "utf-8");
 			

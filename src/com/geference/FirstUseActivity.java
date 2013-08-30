@@ -87,7 +87,7 @@ public class FirstUseActivity extends Activity {
 	}	
 		
 	
-
+/*
 	class SQLdb extends SQLiteOpenHelper {
 
 		public SQLdb(Context context) {
@@ -104,4 +104,5 @@ public class FirstUseActivity extends Activity {
 			// TODO Auto-generated method stub			
 		}
 	}
+*/
 }
